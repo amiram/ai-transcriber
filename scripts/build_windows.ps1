@@ -21,4 +21,8 @@ pip install pyinstaller==5.11.0
 $adddata = "locales;locales"
 pyinstaller --noconfirm --onefile --windowed --name $Name --add-data $adddata transcriber_gui.py
 
-Write-Host "Build complete. Artifacts in .\dist\"$Name""}),({
+# Success message
+Write-Host "Build complete. Artifacts are in .\dist\$Name (or .\dist for onefile output)."
+Write-Host "Example artifact: .\dist\$Name.exe"
+
+exit 0
