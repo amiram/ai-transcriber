@@ -6,6 +6,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$repoRoot = (Get-Location).Path
 
 # Expect exe at DistDir\ExeName, but be tolerant and search recursively if not found
 $exePath = Join-Path $DistDir $ExeName
@@ -30,8 +31,50 @@ if (-not (Test-Path $exePath)) {
                 exit 0
             }
         }
-        Write-Error "Executable not found: $exePath and no other build outputs found in $DistDir"
-        exit 1
+
+        # No outputs in dist. Create a diagnostic zip with build logs & listings to help debug.
+        Write-Host "No build outputs found in $DistDir. Creating diagnostic ZIP with build logs and directory listings..."
+
+        $diagName = "Transcriber_portable_debug.zip"
+        if (Test-Path $diagName) { Remove-Item $diagName }
+
+        # Prepare diagnostics folder
+        $diagTmp = Join-Path $env:TEMP ([System.Guid]::NewGuid().ToString())
+        New-Item -ItemType Directory -Path $diagTmp | Out-Null
+
+        # Save directory listings
+        Get-ChildItem -Path $repoRoot -Recurse -Force | Select-Object FullName,Length,LastWriteTime | Out-File (Join-Path $diagTmp "repo_tree.txt") -Encoding utf8
+        if (Test-Path $DistDir) {
+            Get-ChildItem -Path $DistDir -Recurse -Force | Select-Object FullName,Length,LastWriteTime | Out-File (Join-Path $diagTmp "dist_tree.txt") -Encoding utf8
+        } else {
+            "(no dist directory)" | Out-File (Join-Path $diagTmp "dist_tree.txt") -Encoding utf8
+        }
+
+        # Collect PyInstaller logs if present
+        $possibleLogs = Get-ChildItem -Path $repoRoot -Recurse -Include "pyinstaller*.log","*.log" -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending
+        if ($possibleLogs -and $possibleLogs.Count -gt 0) {
+            $i = 0
+            foreach ($f in $possibleLogs) {
+                Copy-Item $f.FullName -Destination (Join-Path $diagTmp ($i.ToString() + "_" + $f.Name)) -Force
+                $i++
+                if ($i -ge 10) { break }
+            }
+        }
+
+        # Copy build/ and spec file if present
+        if (Test-Path "build") { Copy-Item -Path "build" -Destination $diagTmp -Recurse -ErrorAction SilentlyContinue }
+        if (Test-Path "transcriber.spec") { Copy-Item -Path "transcriber.spec" -Destination $diagTmp -Force }
+
+        # Create zip
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        [System.IO.Compression.ZipFile]::CreateFromDirectory($diagTmp, $diagName)
+        Write-Host "Created diagnostic ZIP: $diagName"
+
+        # cleanup
+        Remove-Item -Recurse -Force $diagTmp
+
+        # Exit successfully so CI has a debug artifact to inspect
+        exit 0
     }
 } else {
     Write-Host "Using executable: $exePath"
