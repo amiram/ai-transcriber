@@ -1,0 +1,33 @@
+Windows Registry Editor Version 5.00
+
+; Add context menu for M4A files
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.m4a\shell\Transcribe]
+@="Transcribe Audio"
+"Icon"="C:\\Windows\\System32\\shell32.dll,265"
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.m4a\shell\Transcribe\command]
+@="\"C:\\Users\\yonat\\transcribe_audio.bat\" \"%1\""
+
+; Add context menu for MP3 files
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.mp3\shell\Transcribe]
+@="Transcribe Audio"
+"Icon"="C:\\Windows\\System32\\shell32.dll,265"
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.mp3\shell\Transcribe\command]
+@="\"C:\\Users\\yonat\\transcribe_audio.bat\" \"%1\""
+
+; Add context menu for WAV files
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.wav\shell\Transcribe]
+@="Transcribe Audio"
+"Icon"="C:\\Windows\\System32\\shell32.dll,265"
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.wav\shell\Transcribe\command]
+@="\"C:\\Users\\yonat\\transcribe_audio.bat\" \"%1\""
+
+; Add context menu for MP4 files
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.mp4\shell\Transcribe]
+@="Transcribe Audio"
+"Icon"="C:\\Windows\\System32\\shell32.dll,265"
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.mp4\shell\Transcribe\command]
+@="\"C:\\Users\\yonat\\transcribe_audio.bat\" \"%1\""

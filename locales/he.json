@@ -1,0 +1,20 @@
+{
+  "title": "מקליט טקסט",
+  "audio_file": "קובץ שמע:",
+  "browse": "עיין...",
+  "output_file": "קובץ פלט:",
+  "model": "דגם:",
+  "language": "שפה:",
+  "start": "התחל",
+  "stop": "עצור",
+  "missing_input": "אנא בחר קובץ שמע.",
+  "not_found": "קובץ השמע שנבחר אינו קיים.",
+  "overwrite_question": "קובץ הפלט כבר קיים:\n{path}\nלהחליף?",
+  "starting_transcription": "מתחיל תמלול: {audio} -> {out} (דגם={model}, שפה={language}, mock={mock})",
+  "done_wrote": "בוצע. נכתב: {path}",
+  "error_transcription": "שגיאת תמלול",
+  "overwrite_title": "להחליף?",
+  "select_audio_title": "בחר קובץ שמע",
+  "select_output_title": "בחר קובץ פלט"
+}
+

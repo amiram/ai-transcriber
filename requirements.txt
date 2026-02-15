@@ -1,0 +1,5 @@
+PyQt6>=6.2
+# whisper and torch are optional during development. For full functionality install:
+# - torch (follow instructions for Windows/CUDA or CPU): https://pytorch.org/
+# - openai-whisper or whisper: pip install -U openai-whisper
+

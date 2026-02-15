@@ -1,0 +1,59 @@
+name: Windows Build and Release
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller==5.11.0
+
+      - name: Build executable with PyInstaller
+        run: |
+          .\scripts\build_windows.ps1 -PythonExe python
+        shell: pwsh
+
+      - name: Package portable ZIP
+        run: |
+          pwsh .\scripts\package_portable.ps1 -ExeName "Transcriber.exe" -DistDir "dist" -OutZip "Transcriber_portable.zip"
+        shell: pwsh
+
+      - name: Compile Inno Setup installer
+        run: |
+          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "installer\\transcriber.iss"
+        shell: cmd
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist\Transcriber.exe
+            Transcriber_portable.zip
+            Output\TranscriberSetup.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload release assets (fallback)
+        if: steps.create_release.outcome != 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: transcriber-artifacts
+          path: |
+            dist\Transcriber.exe
+            Transcriber_portable.zip
+            Output\TranscriberSetup.exe

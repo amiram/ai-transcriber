@@ -1,0 +1,20 @@
+{
+  "title": "Transcriber",
+  "audio_file": "Audio file:",
+  "browse": "Browse...",
+  "output_file": "Output file:",
+  "model": "Model:",
+  "language": "Language:",
+  "start": "Start",
+  "stop": "Stop",
+  "missing_input": "Please select an audio file.",
+  "not_found": "The selected audio file does not exist.",
+  "overwrite_question": "Output file exists:\n{path}\nOverwrite?",
+  "starting_transcription": "Starting transcription: {audio} -> {out} (model={model}, language={language}, mock={mock})",
+  "done_wrote": "Done. Wrote: {path}",
+  "error_transcription": "Transcription error",
+  "overwrite_title": "Overwrite?",
+  "select_audio_title": "Select audio file",
+  "select_output_title": "Select output file"
+}
+
