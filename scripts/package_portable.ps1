@@ -7,10 +7,22 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# Expect exe at DistDir\ExeName, but be tolerant and search recursively if not found
 $exePath = Join-Path $DistDir $ExeName
 if (-not (Test-Path $exePath)) {
-    Write-Error "Executable not found: $exePath"
-    exit 1
+    Write-Host "Expected executable not found at $exePath. Searching recursively in $DistDir for matching .exe files..."
+    $baseName = [System.IO.Path]::GetFileNameWithoutExtension($ExeName)
+    $found = Get-ChildItem -Path $DistDir -Recurse -File -ErrorAction SilentlyContinue |
+             Where-Object { $_.Extension -ieq ".exe" -and $_.BaseName -like "$baseName*" }
+    if ($found -and $found.Count -gt 0) {
+        $exePath = $found[0].FullName
+        Write-Host "Found executable: $exePath"
+    } else {
+        Write-Error "Executable not found: $exePath"
+        exit 1
+    }
+} else {
+    Write-Host "Using executable: $exePath"
 }
 
 # Create a temporary folder and copy exe + locales
@@ -27,4 +39,3 @@ Write-Host "Created $OutZip"
 
 # cleanup
 Remove-Item -Recurse -Force $tmp
-
