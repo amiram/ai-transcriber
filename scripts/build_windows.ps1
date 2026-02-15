@@ -19,10 +19,24 @@ pip install pyinstaller==5.11.0
 # Build with PyInstaller
 # Include locales directory; on Windows the separator in --add-data is ";" with dest folder name.
 $adddata = "locales;locales"
-pyinstaller --noconfirm --onefile --windowed --name $Name --add-data $adddata transcriber_gui.py
+$pyinstallerCmd = "pyinstaller --noconfirm --onefile --windowed --name $Name --add-data $adddata transcriber_gui.py"
+Write-Host "Running: $pyinstallerCmd"
+
+# Capture output to a log file for CI debugging
+$logFile = Join-Path (Get-Location) "pyinstaller_build.log"
+try {
+    & cmd /c "$pyinstallerCmd" 2>&1 | Tee-Object -FilePath $logFile
+} catch {
+    Write-Host "PyInstaller command failed. See $logFile for details."
+    # Dump last lines of log for immediate visibility
+    if (Test-Path $logFile) { Get-Content $logFile -Tail 100 }
+    throw
+}
+
+Write-Host "PyInstaller finished. Log saved to: $logFile"
 
 # Success message
-Write-Host "Build complete. Artifacts are in .\dist\$Name (or .\dist for onefile output)."
-Write-Host "Example artifact: .\dist\$Name.exe"
+Write-Host "Build complete. Artifacts are expected under .\dist\"
+Write-Host "Example artifact (onefile): .\dist\$Name.exe or in a subfolder depending on PyInstaller output"
 
 exit 0
