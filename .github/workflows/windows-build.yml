@@ -27,6 +27,20 @@ jobs:
           .\scripts\build_windows.ps1 -PythonExe python
         shell: pwsh
 
+      - name: Show dist/ contents for debugging
+        run: |
+          dir .\dist\ /s
+        shell: cmd
+
+      - name: Upload PyInstaller log and build folder (diagnostics)
+        uses: actions/upload-artifact@v4
+        with:
+          name: pyinstaller-diagnostics
+          path: |
+            pyinstaller_build.log
+            build/**
+            dist/**
+
       - name: Package portable ZIP
         run: |
           pwsh .\scripts\package_portable.ps1 -ExeName "Transcriber.exe" -DistDir "dist" -OutZip "Transcriber_portable.zip"
