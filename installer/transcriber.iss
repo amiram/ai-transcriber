@@ -9,8 +9,9 @@ Compression=lzma
 SolidCompression=yes
 
 [Files]
-Source: "{#src}\dist\Transcriber.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#src}\locales\*"; DestDir: "{app}\locales"; Flags: ignoreversion recursesubdirs
+; Use relative paths from the installer script location (repo root is parent folder)
+Source: "..\dist\Transcriber.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\locales\*"; DestDir: "{app}\locales"; Flags: ignoreversion recursesubdirs
 
 [Icons]
 Name: "{group}\Transcriber"; Filename: "{app}\Transcriber.exe"
@@ -18,5 +19,4 @@ Name: "{group}\Transcriber"; Filename: "{app}\Transcriber.exe"
 [Run]
 Filename: "{app}\Transcriber.exe"; Description: "Launch Transcriber"; Flags: nowait postinstall skipifsilent
 
-; Note: Replace {#src} with the installer build path when compiling.
-
+; Note: Run ISCC from the repository root or adjust paths accordingly.
