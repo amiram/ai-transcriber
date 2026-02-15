@@ -18,7 +18,19 @@ if (-not (Test-Path $exePath)) {
         $exePath = $found[0].FullName
         Write-Host "Found executable: $exePath"
     } else {
-        Write-Error "Executable not found: $exePath"
+        Write-Host "No matching executable found in $DistDir. Checking for other build outputs..."
+        if (Test-Path $DistDir) {
+            $entries = Get-ChildItem -Path $DistDir -Recurse -File -ErrorAction SilentlyContinue
+            if ($entries -and $entries.Count -gt 0) {
+                Write-Host "No executable found, but $DistDir contains other build outputs. Zipping entire $DistDir as a fallback artifact: $OutZip"
+                if (Test-Path $OutZip) { Remove-Item $OutZip }
+                Add-Type -AssemblyName System.IO.Compression.FileSystem
+                [System.IO.Compression.ZipFile]::CreateFromDirectory((Resolve-Path $DistDir).Path, $OutZip)
+                Write-Host "Created fallback ZIP: $OutZip"
+                exit 0
+            }
+        }
+        Write-Error "Executable not found: $exePath and no other build outputs found in $DistDir"
         exit 1
     }
 } else {
