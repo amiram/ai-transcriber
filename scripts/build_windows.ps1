@@ -11,10 +11,18 @@ $ErrorActionPreference = 'Stop'
 
 Write-Host "Creating virtual environment and installing build deps..."
 & $PythonExe -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install --upgrade pip
-pip install -r requirements.txt
-pip install pyinstaller==5.11.0
+$venvPython = Join-Path (Get-Location) ".venv\Scripts\python.exe"
+if (Test-Path $venvPython) {
+    Write-Host "Upgrading pip inside venv: $venvPython -m pip install --upgrade pip"
+    & $venvPython -m pip install --upgrade pip
+    & $venvPython -m pip install -r requirements.txt
+    & $venvPython -m pip install pyinstaller==5.11.0
+} else {
+    Write-Host "No venv python found, falling back to system python"
+    & $PythonExe -m pip install --upgrade pip
+    & $PythonExe -m pip install -r requirements.txt
+    & $PythonExe -m pip install pyinstaller==5.11.0
+}
 
 # Build with PyInstaller
 # Include locales directory; on Windows the separator in --add-data is ";" with dest folder name.
