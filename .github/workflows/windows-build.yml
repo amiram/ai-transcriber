@@ -53,12 +53,17 @@ jobs:
         shell: cmd
 
       - name: Collect installer executable into a stable path
-        run: |
-          echo "Looking for any .exe files under installer\Output and copying the newest one to ./TranscriberSetup.exe"
-          powershell -NoProfile -Command "\
-            $out = Get-ChildItem -Path 'installer\Output' -Filter '*.exe' -File -Recurse -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1; \
-            if ($null -ne $out) { Copy-Item -Path $out.FullName -Destination (Join-Path (Get-Location) 'TranscriberSetup.exe') -Force; Write-Host \"Copied installer: $($out.FullName) -> TranscriberSetup.exe\" } else { Write-Host 'No installer executable found under installer\Output'; exit 0 }"
         shell: pwsh
+        run: |
+          Write-Host "Looking for any .exe files under installer\Output and copying the newest one to ./TranscriberSetup.exe"
+          $out = Get-ChildItem -Path 'installer\Output' -Filter '*.exe' -File -Recurse -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if ($null -ne $out) {
+            Copy-Item -Path $out.FullName -Destination (Join-Path (Get-Location) 'TranscriberSetup.exe') -Force
+            Write-Host "Copied installer: $($out.FullName) -> TranscriberSetup.exe"
+          } else {
+            Write-Host 'No installer executable found under installer\Output'
+            exit 0
+          }
 
       - name: Verify expected artifacts exist (dist & installer)
         run: |
