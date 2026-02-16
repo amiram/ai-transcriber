@@ -52,12 +52,20 @@ jobs:
           "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "installer\\transcriber.iss"
         shell: cmd
 
+      - name: Collect installer executable into a stable path
+        run: |
+          echo "Looking for any .exe files under installer\Output and copying the newest one to ./TranscriberSetup.exe"
+          powershell -NoProfile -Command "\
+            $out = Get-ChildItem -Path 'installer\Output' -Filter '*.exe' -File -Recurse -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1; \
+            if ($null -ne $out) { Copy-Item -Path $out.FullName -Destination (Join-Path (Get-Location) 'TranscriberSetup.exe') -Force; Write-Host \"Copied installer: $($out.FullName) -> TranscriberSetup.exe\" } else { Write-Host 'No installer executable found under installer\Output'; exit 0 }"
+        shell: pwsh
+
       - name: Verify expected artifacts exist (dist & installer)
         run: |
           echo "Checking for dist\Transcriber.exe"
           if exist dist\Transcriber.exe (echo "FOUND dist\Transcriber.exe") else echo "MISSING dist\Transcriber.exe"
-          echo "Checking for installer Output file"
-          if exist installer\Output\TranscriberSetup.exe (echo "FOUND installer\Output\TranscriberSetup.exe") else echo "MISSING installer\Output\TranscriberSetup.exe"
+          echo "Checking for installer TranscriberSetup.exe in repo root"
+          if exist TranscriberSetup.exe (echo "FOUND TranscriberSetup.exe") else echo "MISSING TranscriberSetup.exe"
         shell: cmd
 
       - name: Create GitHub Release
@@ -68,7 +76,7 @@ jobs:
           files: |
             dist\Transcriber.exe
             Transcriber_portable.zip
-            installer\Output\TranscriberSetup.exe
+            TranscriberSetup.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
 
@@ -80,4 +88,4 @@ jobs:
           path: |
             dist\Transcriber.exe
             Transcriber_portable.zip
-            installer\Output\TranscriberSetup.exe
+            TranscriberSetup.exe
