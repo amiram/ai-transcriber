@@ -49,15 +49,16 @@ jobs:
 
       - name: Compile Inno Setup installer
         run: |
-          echo "Determining version to pass to ISCC..."
+          Write-Host "Determining version to pass to ISCC..."
           if ($env:GITHUB_REF -and $env:GITHUB_REF.StartsWith('refs/tags/')) {
             $version = $env:GITHUB_REF.Substring(10)
           } else {
             $version = '1.0'
           }
           Write-Host "Using version: $version"
-          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" \
-            "/DMyAppVersion=$version" "installer\\transcriber.iss"
+          $isccPath = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+          Write-Host "Running: $isccPath /DMyAppVersion=$version installer\\transcriber.iss"
+          & "$isccPath" "/DMyAppVersion=$version" "installer\\transcriber.iss"
         shell: pwsh
 
       - name: Collect installer executable into a stable path
