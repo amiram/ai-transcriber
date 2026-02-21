@@ -214,18 +214,29 @@ class MainWindow(QMainWindow):
         return os.path.join(dirpath, f"{base}_transcription_{model_name}.txt")
 
     def browse_audio(self):
-        fname, _ = QFileDialog.getOpenFileName(self, self._t("select_audio_title"))
+        # Start browsing in last used directory (fallback to user's Documents)
+        default_dir = self._config.get("last_dir") or os.path.join(os.path.expanduser("~"), "Documents")
+        fname, _ = QFileDialog.getOpenFileName(self, self._t("select_audio_title"), default_dir)
         if fname:
             self.audio_input.setText(fname)
+            # remember last directory and update config
+            self._config["last_dir"] = os.path.dirname(fname)
+            # set default output if empty
             if not self.output_input.text():
                 self.output_input.setText(self._default_output_for(fname, self.model_cb.currentText()))
+            self._save_config()
 
     def browse_output(self):
-        fname, _ = QFileDialog.getSaveFileName(self, self._t("select_output_title"), filter="Text files (*.txt);;All files (*)")
+        # Start browsing in last used directory (fallback to user's Documents)
+        default_dir = self._config.get("last_dir") or os.path.join(os.path.expanduser("~"), "Documents")
+        fname, _ = QFileDialog.getSaveFileName(self, self._t("select_output_title"), default_dir, filter="Text files (*.txt);;All files (*)")
         if fname:
             self.output_input.setText(fname)
+            # remember last directory and persist
+            self._config["last_dir"] = os.path.dirname(fname)
+            self._save_config()
 
-    def _load_config(self):
+    def _load_config(self) -> dict:
         # Try APPDATA first for Windows, otherwise use local folder
         appdata = os.getenv("APPDATA")
         if appdata:
@@ -243,7 +254,9 @@ class MainWindow(QMainWindow):
                     return json.load(f)
             except Exception:
                 return {}
-        return {"model": "small", "language": "auto"}
+        # Default last_dir -> user's Documents folder if available
+        default_docs = os.path.join(os.path.expanduser("~"), "Documents")
+        return {"model": "small", "language": "auto", "last_dir": default_docs}
 
     def _save_config(self):
         appdata = os.getenv("APPDATA")
@@ -252,8 +265,11 @@ class MainWindow(QMainWindow):
             try:
                 os.makedirs(cfg_dir, exist_ok=True)
                 cfg_file = os.path.join(cfg_dir, CONFIG_FILE_NAME)
+                # persist last used folder (prefer explicit config value, otherwise derived from audio input)
+                last_dir = self._config.get("last_dir") or (os.path.dirname(self.audio_input.text()) if self.audio_input.text() else os.getcwd())
+                payload = {"model": self.model_cb.currentText(), "language": self.lang_cb.currentText(), "last_audio": self.audio_input.text(), "last_dir": last_dir}
                 with open(cfg_file, "w", encoding="utf-8") as f:
-                    json.dump({"model": self.model_cb.currentText(), "language": self.lang_cb.currentText(), "last_audio": self.audio_input.text()}, f)
+                    json.dump(payload, f)
             except Exception:
                 # best-effort: ignore config save errors
                 pass
