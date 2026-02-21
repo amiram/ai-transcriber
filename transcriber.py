@@ -24,6 +24,22 @@ import sys
 from typing import Callable, Optional, Dict, Any
 import threading
 
+# If running as a bundled app (PyInstaller onefile), make bundled ffmpeg available on PATH
+if getattr(sys, 'frozen', False):
+    # sys.executable points to the bundled exe location
+    base_dir = os.path.dirname(sys.executable)
+    candidate_paths = [
+        base_dir,
+        os.path.join(base_dir, 'ffmpeg'),
+        os.path.join(base_dir, 'ffmpeg', 'bin'),
+    ]
+    for p in candidate_paths:
+        ff = os.path.join(p, 'ffmpeg.exe')
+        if os.path.exists(ff):
+            # Prepend to PATH so subprocess 'ffmpeg' resolves
+            os.environ['PATH'] = p + os.pathsep + os.environ.get('PATH', '')
+            break
+
 
 def detect_device() -> str:
     """Detects whether a CUDA-capable GPU is available and returns the device to use ('cuda' or 'cpu').
