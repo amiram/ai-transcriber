@@ -1,8 +1,11 @@
 ; Inno Setup script for Transcriber
+#ifndef MyAppVersion
+#define MyAppVersion "1.0"
+#endif
 [Setup]
 AppName=Transcriber
-AppVersion=1.0
-DefaultDirName={pf}\Transcriber
+AppVersion={#MyAppVersion}
+DefaultDirName={pf64}\Transcriber
 DefaultGroupName=Transcriber
 OutputBaseFilename=TranscriberSetup
 Compression=lzma

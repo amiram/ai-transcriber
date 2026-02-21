@@ -38,7 +38,7 @@ from PyQt6.QtWidgets import (
 )
 
 # Local import
-from .. import transcriber
+import transcriber
 
 CONFIG_FILE_NAME = "transcriber_config.json"
 
