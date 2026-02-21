@@ -22,7 +22,7 @@ from transcriber import transcribe_file, detect_device
 def main(argv: List[str] | None = None):
     parser = argparse.ArgumentParser(description="Batch transcribe audio files")
     parser.add_argument("files", nargs="+", help="Audio files to transcribe")
-    parser.add_argument("--model", default="small", help="Whisper model to use (tiny, base, small, medium, large)")
+    parser.add_argument("--model", default="large", help="Whisper model to use (tiny, base, small, medium, large)")
     parser.add_argument("--lang", default=None, help="Language code (e.g. en, he). Use auto or omit to let model detect language")
     parser.add_argument("--out-dir", default=None, help="Directory to place transcriptions (defaults to each file's dir)")
     parser.add_argument("--mock", action="store_true", help="Run in mock mode (no real models required)")
@@ -45,4 +45,3 @@ def main(argv: List[str] | None = None):
 
 if __name__ == "__main__":
     main()
-

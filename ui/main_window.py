@@ -82,6 +82,21 @@ class MainWindow(QMainWindow):
         self._config = self._load_config()
         self._strings = self._load_locale()
 
+        # Startup diagnostics: show interpreter and availability of whisper/torch
+        try:
+            import whisper as _wh
+            whisper_ok = True
+        except Exception:
+            whisper_ok = False
+        try:
+            import torch as _th
+            torch_ok = True
+        except Exception:
+            torch_ok = False
+        interp = sys.executable if hasattr(sys, 'executable') else 'unknown'
+        # We'll append to the log widget after it's created; store as attr
+        self._startup_diag = f"Python executable: {interp}\nwhisper: {whisper_ok}  torch: {torch_ok}\n"
+
         self.setWindowTitle(self._t("title"))
         self.resize(800, 420)
 
@@ -113,8 +128,10 @@ class MainWindow(QMainWindow):
         # Model + Language
         h3 = QHBoxLayout()
         self.model_cb = QComboBox()
+        # model chooser
         self.model_cb.addItems(["tiny", "base", "small", "medium", "large"])
-        self.model_cb.setCurrentText(self._config.get("model", "small"))
+        # default model is 'large' unless configured otherwise
+        self.model_cb.setCurrentText(self._config.get("model", "large"))
 
         self.lang_cb = QComboBox()
         # try to populate languages from whisper if available
@@ -152,6 +169,9 @@ class MainWindow(QMainWindow):
         self.log = QTextEdit()
         self.log.setReadOnly(True)
         layout.addWidget(self.log)
+
+        # Show startup diagnostics in the log area
+        self.log.append(self._startup_diag)
 
         # Worker
         self.worker: Optional[TranscribeWorker] = None
@@ -205,8 +225,36 @@ class MainWindow(QMainWindow):
             }
 
     def _on_model_change(self, model_name: str):
-        if self.audio_input.text() and not self.output_input.text():
-            self.output_input.setText(self._default_output_for(self.audio_input.text(), model_name))
+        """When the model changes, update the output filename to reflect the new model.
+        Behavior:
+        - If output is empty: set to default based on audio file + model.
+        - If output already contains a _transcription_<model> suffix, replace the model part with the new model.
+        - Otherwise leave the user's custom filename intact.
+        """
+        out = self.output_input.text().strip()
+        audio = self.audio_input.text().strip()
+        if not out and audio:
+            self.output_input.setText(self._default_output_for(audio, model_name))
+            return
+
+        # If output looks like: <base>_transcription_<oldmodel>.txt -> replace oldmodel
+        if out:
+            base, ext = os.path.splitext(out)
+            if base.endswith('_transcription_' + self._config.get('model', 'large')):
+                # replace old model suffix
+                new_base = base[: -len('_transcription_' + self._config.get('model', 'large'))] + '_transcription_' + model_name
+                self.output_input.setText(new_base + ext)
+            else:
+                # try to detect any _transcription_<something> pattern and replace
+                parts = base.rsplit('_transcription_', 1)
+                if len(parts) == 2:
+                    new_base = parts[0] + '_transcription_' + model_name
+                    self.output_input.setText(new_base + ext)
+                # else: user has custom filename - do nothing
+
+        # update config model to persist choice
+        self._config['model'] = model_name
+        self._save_config()
 
     def _default_output_for(self, audio_path: str, model_name: str) -> str:
         base = os.path.splitext(os.path.basename(audio_path))[0]

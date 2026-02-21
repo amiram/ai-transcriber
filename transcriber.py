@@ -20,6 +20,7 @@ from __future__ import annotations
 import os
 import json
 import time
+import sys
 from typing import Callable, Optional, Dict, Any
 import threading
 
@@ -55,7 +56,7 @@ def _format_paragraphs_from_segments(segments: list[Dict[str, Any]]) -> str:
 
 def transcribe_file(
     audio_path: str,
-    model_name: str = "small",
+    model_name: str = "large",
     language: Optional[str] = None,
     output_path: Optional[str] = None,
     progress_callback: Optional[Callable[[float], None]] = None,
@@ -84,12 +85,37 @@ def transcribe_file(
 
     # Real mode - try to use whisper (and torch)
     try:
-        import whisper
-        import torch
-    except Exception as e:
-        raise ImportError(
-            "whisper and/or torch not available. For development & CI you can run in mock mode by passing mock=True."
-        ) from e
+        # Try importing whisper; support potential alternate package names
+        try:
+            import whisper
+        except Exception:
+            try:
+                import openai_whisper as whisper  # some installs may alias differently
+            except Exception:
+                whisper = None
+
+        try:
+            import torch
+        except Exception:
+            torch = None
+
+        if whisper is None or torch is None:
+            raise ImportError("missing")
+    except ImportError as e:
+        # Build helpful diagnostics so users can install into the same Python environment
+        exe = sys.executable or "python"
+        msg_lines = [
+            "whisper and/or torch not available in this Python environment.",
+            "Details:",
+            f"  sys.executable: {exe}",
+            f"  sys.path: {sys.path}",
+            "Recommendation:",
+            f"  Install inside this Python: {exe} -m pip install -U openai-whisper",
+            "  For torch, follow the official install instructions: https://pytorch.org/ (choose correct CUDA/cpu build).",
+            "If you are running the GUI or a packaged exe, ensure the runtime includes these packages or use mock mode.",
+            "To run a quick test without models, call transcribe_file(..., mock=True).",
+        ]
+        raise ImportError("\n".join(msg_lines)) from e
 
     # Load model
     model = whisper.load_model(model_name)
@@ -131,4 +157,3 @@ if __name__ == "__main__":
     out = args.out or os.path.splitext(args.audio_file)[0] + "_transcription_" + args.model + ".txt"
     res = transcribe_file(args.audio_file, model_name=args.model, language=args.lang, output_path=out, mock=args.mock)
     print("Wrote:", res.get("output_file"))
-
