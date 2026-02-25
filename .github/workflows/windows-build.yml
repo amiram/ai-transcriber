@@ -58,6 +58,44 @@ jobs:
           dir .\dist\ /s
         shell: cmd
 
+      - name: Verify dist\Transcriber.exe and emit diagnostics if missing
+        shell: pwsh
+        run: |
+          $expected = Join-Path (Get-Location) 'dist\Transcriber.exe'
+          if (Test-Path $expected) {
+            Write-Host "Found expected executable: $expected"
+            exit 0
+          }
+
+          Write-Host "ERROR: Expected exe not found at $expected"
+          Write-Host "--- PyInstaller log (last 200 lines) ---"
+          if (Test-Path pyinstaller_build.log) { Get-Content pyinstaller_build.log -Tail 200 } else { Write-Host "pyinstaller_build.log not found" }
+
+          Write-Host "--- dist directory listing ---"
+          if (Test-Path (Join-Path (Get-Location) 'dist')) { Get-ChildItem -Path 'dist' -Recurse -Force | Format-Table -AutoSize } else { Write-Host "dist directory not present" }
+
+          Write-Host "--- installer\Output directory listing ---"
+          if (Test-Path (Join-Path (Get-Location) 'installer\Output')) { Get-ChildItem -Path 'installer\Output' -Recurse -Force | Format-Table -AutoSize } else { Write-Host "installer\Output directory not present" }
+
+          # Create diagnostics zip for upload
+          $diagTmp = Join-Path $env:TEMP ([System.Guid]::NewGuid().ToString())
+          New-Item -ItemType Directory -Path $diagTmp | Out-Null
+          if (Test-Path pyinstaller_build.log) { Copy-Item -Path pyinstaller_build.log -Destination $diagTmp -Force }
+          if (Test-Path 'dist') { Copy-Item -Path 'dist' -Destination $diagTmp -Recurse -Force }
+          if (Test-Path 'build') { Copy-Item -Path 'build' -Destination $diagTmp -Recurse -Force }
+          if (Test-Path 'installer\Output') { Copy-Item -Path 'installer\Output' -Destination $diagTmp -Recurse -Force }
+          $diagName = 'ci-diagnostics.zip'
+          if (Test-Path $diagName) { Remove-Item $diagName -Force }
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          [System.IO.Compression.ZipFile]::CreateFromDirectory($diagTmp, $diagName)
+          Write-Host "Created diagnostic ZIP: $diagName"
+
+          # Cleanup temp
+          Remove-Item -Recurse -Force $diagTmp
+
+          # Exit with error so CI marks the job failed and we can inspect the uploaded artifact
+          exit 1
+
       - name: Upload PyInstaller log and build folder (diagnostics)
         uses: actions/upload-artifact@v4
         with:
