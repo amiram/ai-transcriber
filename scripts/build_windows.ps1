@@ -34,7 +34,7 @@ $pyExec = if (Test-Path $venvPython) { $venvPython } else { $PythonExe }
 # We'll run PyInstaller programmatically via Python -c so we can increase recursionlimit
 # before PyInstaller imports modules. This avoids passing --onefile with a .spec file
 $pyCmd = "import sys; sys.setrecursionlimit(sys.getrecursionlimit()*5); from PyInstaller.__main__ import run; run(['--noconfirm','--onefile','--windowed','--name','$Name','--add-data','$adddata','transcriber_gui.py','--distpath','$BuildDir'])"
-Write-Host "Running PyInstaller via: $pyExec -c \"<pycmd>\""
+Write-Host ('Running PyInstaller via: ' + $pyExec + ' -c "[python snippet]"')
 
 # Capture output to a log file for CI debugging
 $logFile = Join-Path (Get-Location) "pyinstaller_build.log"
