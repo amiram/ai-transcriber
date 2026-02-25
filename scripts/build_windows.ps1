@@ -27,8 +27,8 @@ if (Test-Path $venvPython) {
 # Build with PyInstaller
 # Include locales directory; on Windows the separator in --add-data is ";" with dest folder name.
 $adddata = "locales;locales"
-# Ensure one-file output and explicit dist path so CI and Inno Setup can find the EXE
-$pyinstallerCmd = "pyinstaller --noconfirm --onefile --windowed --name $Name --add-data $adddata --distpath $BuildDir transcriber_gui.py"
+# Use the transcriber.spec which contains a recursionlimit increase and ensures proper data collection
+$pyinstallerCmd = "pyinstaller --clean --noconfirm --onefile --distpath $BuildDir transcriber.spec"
 Write-Host "Running: $pyinstallerCmd"
 
 # Capture output to a log file for CI debugging
