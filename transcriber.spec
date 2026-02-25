@@ -12,6 +12,9 @@ also be used from the command line). Adjust `icon` or other options as needed.
 """
 
 import sys
+# Increase recursion limit to avoid PyInstaller RecursionError during analysis
+sys.setrecursionlimit(sys.getrecursionlimit() * 5)
+
 from pathlib import Path
 from PyInstaller.utils.hooks import collect_submodules
 
@@ -63,4 +66,3 @@ coll = COLLECT(
     upx=True,
     name='Transcriber'
 )
-
