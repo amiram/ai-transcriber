@@ -27,14 +27,19 @@ if (Test-Path $venvPython) {
 # Build with PyInstaller
 # Include locales directory; on Windows the separator in --add-data is ";" with dest folder name.
 $adddata = "locales;locales"
-# Use the transcriber.spec which contains a recursionlimit increase and ensures proper data collection
-$pyinstallerCmd = "pyinstaller --clean --noconfirm --onefile --distpath $BuildDir transcriber.spec"
-Write-Host "Running: $pyinstallerCmd"
+
+# Decide which Python binary to use (venv if present)
+$pyExec = if (Test-Path $venvPython) { $venvPython } else { $PythonExe }
+
+# We'll run PyInstaller programmatically via Python -c so we can increase recursionlimit
+# before PyInstaller imports modules. This avoids passing --onefile with a .spec file
+$pyCmd = "import sys; sys.setrecursionlimit(sys.getrecursionlimit()*5); from PyInstaller.__main__ import run; run(['--noconfirm','--onefile','--windowed','--name','$Name','--add-data','$adddata','transcriber_gui.py','--distpath','$BuildDir'])"
+Write-Host "Running PyInstaller via: $pyExec -c \"<pycmd>\""
 
 # Capture output to a log file for CI debugging
 $logFile = Join-Path (Get-Location) "pyinstaller_build.log"
 try {
-    & cmd /c "$pyinstallerCmd" 2>&1 | Tee-Object -FilePath $logFile
+    & $pyExec -c $pyCmd 2>&1 | Tee-Object -FilePath $logFile
 } catch {
     Write-Host "PyInstaller command failed. See $logFile for details."
     # Dump last lines of log for immediate visibility
@@ -44,7 +49,7 @@ try {
 
 Write-Host "PyInstaller finished. Log saved to: $logFile"
 
-# Normalize output: ensure a predictable path dist\<Name>.exe exists.
+# Normalize output: ensure a predictable path dist\$Name.exe exists.
 # PyInstaller normally places the onefile exe at --distpath\<Name>.exe, but some builds or spec usage
 # may produce a nested folder or different naming; search and copy the newest .exe as a fallback.
 try {
