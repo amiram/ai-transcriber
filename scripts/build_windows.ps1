@@ -27,7 +27,8 @@ if (Test-Path $venvPython) {
 # Build with PyInstaller
 # Include locales directory; on Windows the separator in --add-data is ";" with dest folder name.
 $adddata = "locales;locales"
-$pyinstallerCmd = "pyinstaller --noconfirm --onefile --windowed --name $Name --add-data $adddata transcriber_gui.py"
+# Ensure one-file output and explicit dist path so CI and Inno Setup can find the EXE
+$pyinstallerCmd = "pyinstaller --noconfirm --onefile --windowed --name $Name --add-data $adddata --distpath $BuildDir transcriber_gui.py"
 Write-Host "Running: $pyinstallerCmd"
 
 # Capture output to a log file for CI debugging
@@ -43,8 +44,34 @@ try {
 
 Write-Host "PyInstaller finished. Log saved to: $logFile"
 
+# Normalize output: ensure a predictable path dist\<Name>.exe exists.
+# PyInstaller normally places the onefile exe at --distpath\<Name>.exe, but some builds or spec usage
+# may produce a nested folder or different naming; search and copy the newest .exe as a fallback.
+try {
+    $buildDirPath = Join-Path (Get-Location) $BuildDir
+    if (Test-Path $buildDirPath) {
+        $found = Get-ChildItem -Path $buildDirPath -Recurse -Filter '*.exe' -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        if ($null -ne $found) {
+            $expected = Join-Path $buildDirPath ("$Name.exe")
+            # If the found exe isn't the expected path, copy/overwrite the expected path for downstream steps
+            if (-not (Test-Path $expected) -or (Resolve-Path $found.FullName).Path -ne (Resolve-Path $expected -ErrorAction SilentlyContinue).Path) {
+                Copy-Item -Path $found.FullName -Destination $expected -Force
+                Write-Host "Normalized EXE: $($found.FullName) -> $expected"
+            } else {
+                Write-Host "Expected EXE already present at $expected"
+            }
+        } else {
+            Write-Host "Warning: No executable found under $buildDirPath"
+        }
+    } else {
+        Write-Host "Warning: Build directory $buildDirPath does not exist"
+    }
+} catch {
+    Write-Host "Warning: failed to normalize exe path: $_"
+}
+
 # Success message
-Write-Host "Build complete. Artifacts are expected under .\dist\"
-Write-Host "Example artifact (onefile): .\dist\$Name.exe or in a subfolder depending on PyInstaller output"
+Write-Host "Build complete. Artifacts are expected under .\$BuildDir"
+Write-Host "Example artifact (onefile): .\$BuildDir\$Name.exe or in a subfolder depending on PyInstaller output"
 
 exit 0

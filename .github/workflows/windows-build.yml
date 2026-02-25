@@ -31,6 +31,28 @@ jobs:
           .\scripts\build_windows.ps1 -PythonExe python
         shell: pwsh
 
+      - name: Ensure dist\Transcriber.exe exists
+        shell: pwsh
+        run: |
+          Write-Host "Ensuring dist\\Transcriber.exe exists (searching recursively)..."
+          $dist = Join-Path (Get-Location) 'dist'
+          if (-not (Test-Path $dist)) {
+            Write-Host "dist directory not found; skipping copy"
+            exit 0
+          }
+          $found = Get-ChildItem -Path $dist -Recurse -Filter '*.exe' -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if ($null -ne $found) {
+            $dest = Join-Path $dist 'Transcriber.exe'
+            if ($found.FullName -ne $dest) {
+              Copy-Item -Path $found.FullName -Destination $dest -Force
+              Write-Host "Copied $($found.FullName) -> $dest"
+            } else {
+              Write-Host "Transcriber.exe already present at $dest"
+            }
+          } else {
+            Write-Host "No executable found under $dist"
+          }
+
       - name: Show dist/ contents for debugging
         run: |
           dir .\dist\ /s
